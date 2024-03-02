@@ -1,0 +1,111 @@
+#include "data.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+#define MAX_SIZE 180
+#define PI 3.141592653589793
+#define N 20
+
+float inBuffer[MAX_SIZE] = {A_ARRAY};
+float outBuffer[MAX_SIZE];
+
+struct complex {
+	float real;
+	float image;
+};
+
+struct complex dft(float* x, int n, int k) {
+	int i = 0;
+	float resReal = 0;
+	float resImage = 0;
+	struct complex result;
+	result.real = 0;
+	result.image = 0;
+	for(i = 0; i < n; i++) {
+		resReal += (x[i] * cos(2 * PI * i * k / n));
+		resImage -= (x[i] * sin(2 * PI * i * k / n));
+	}
+	result.real = resReal;
+	result.image = resImage;
+	return result;
+}
+
+float curve(struct complex x) {
+	return sqrt(x.real * x.real + x.image * x.image);
+}
+
+
+void rect(float* inputData, float* outputData, int n) {
+	int i = 0;
+	for(i = 0; i < n; i++) {
+		if(i < N) {
+			outputData[i] = 1;
+		} else {
+			outputData[i] = 0;
+		}
+		outputData[i] *= inputData[i];
+	}
+}
+
+void nattol(float* inputData, float* outputData, int n) {
+	int i = 0;
+	int r = 0;
+	float a[] = {0.3636,0.4892,0.1366,0.0106};
+
+	for(i = 0; i < n; i++) {
+		if(i < N) {
+			for(r=0;r<=3;r++){
+				outputData[i] = a[i]*cos(2*PI*r*((i - (N - 1) / 2) / (N - 1)));			}
+		}
+		outputData[i] *= inputData[i];
+	}
+}
+
+void gauss(float* inputData, float* outputData, int n) {
+	int i = 0;
+	for(i = 0; i < n; i++) {
+		if (i < N){
+			outputData[i] =	exp(abs(-12.5*pow(((i - (N - 1) / 2) / (N - 1)),2)));
+		}
+		outputData[i] *= inputData[i];
+	}
+}
+
+void spectr(float* buffer, int n, float* arrToShow, int k) {
+	
+	struct complex spectrSignal;
+
+	for(k = 0; k < n; k++) {
+			spectrSignal = dft(buffer, MAX_SIZE, k);
+			arrToShow[k] = curve(spectrSignal);
+		}
+
+		arrToShow[MAX_SIZE - 1] += 1;
+		arrToShow[MAX_SIZE - 1] -= 1;
+} 
+
+void main() {
+
+	int k = 0;	
+	float arrToShow[MAX_SIZE];
+
+	//spectr of input signal
+	spectr(inBuffer,MAX_SIZE,arrToShow,k);
+	k++;//for breakpoint
+
+	//rectangle 
+	rect(inBuffer, outBuffer, MAX_SIZE);
+	spectr(outBuffer,MAX_SIZE,arrToShow,k);
+	k++;
+
+	//Nattol window
+	nattol(inBuffer, outBuffer, MAX_SIZE);
+	spectr(outBuffer,MAX_SIZE,arrToShow,k);
+	k++;
+	
+	//Gauss window
+	gauss(inBuffer, outBuffer, MAX_SIZE);
+	spectr(outBuffer,MAX_SIZE,arrToShow,k);
+	k++;
+}
